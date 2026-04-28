@@ -39,7 +39,7 @@ jobs:
         working-directory: ./server
         run: |
           echo "eula=true" > eula.txt
-          java -jar server.jar nogui || true
+          timeout 20s java -jar server.jar nogui || true
 
       # 4. SECOND RUN (Initialize Slimefun4)
       - name: Second run - Initialize Slimefun4
