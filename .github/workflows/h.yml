@@ -1,0 +1,96 @@
+name: Build Paper 1.20.4 Server with Slimefun4
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+      release_name:
+        description: 'Release name'
+        required: true
+        default: 'Paper 1.20.4 Server with Slimefun4'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to create releases
+    steps:
+      - name: Install 7zip
+        run: sudo apt-get update && sudo apt-get install -y p7zip-full
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Create server directory
+        run: mkdir server
+
+      # 1. DOWNLOAD PAPER 1.20.4
+      - name: Download Paper 1.20.4
+        working-directory: ./server
+        run: |
+          PAPER_URL="https://fill-data.papermc.io/v1/objects/cabed3ae77cf55deba7c7d8722bc9cfd5e991201c211665f9265616d9fe5c77b/paper-1.20.4-499.jar"
+          wget "$PAPER_URL" -O server.jar
+
+      # 2. DOWNLOAD SLIMEFUN4 from blob.build
+      - name: Download Slimefun4
+        working-directory: ./server
+        run: |
+          mkdir -p plugins
+          curl -L "https://blob.build/project/Slimefun4/Dev" -o plugins/Slimefun4.jar
+
+      # 3. FIRST RUN (Accept EULA)
+      - name: First run - Accept EULA
+        working-directory: ./server
+        run: |
+          echo "eula=true" > eula.txt
+          java -jar server.jar nogui || true
+
+      # 4. SECOND RUN (Initialize Slimefun4)
+      - name: Second run - Initialize Slimefun4
+        working-directory: ./server
+        run: |
+          timeout 45s java -jar server.jar nogui || true
+          sleep 5
+
+      # 5. ZIP and SPLIT into 100MB parts
+      - name: Compress and split server
+        working-directory: ./server
+        run: |
+          zip -r ../paper-slimefun-server.zip .
+          cd ..
+          7z -v100m a paper-slimefun-server.7z ./paper-slimefun-server.zip
+          rm paper-slimefun-server.zip
+
+      # 6. CREATE GITHUB RELEASE AND UPLOAD PARTS
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.release_tag }}
+          name: ${{ github.event.inputs.release_name }}
+          body: |
+            ## Minecraft Paper 1.20.4 Server with Slimefun4
+
+            ### Download Instructions:
+            1. Download all `.7z.00*` files below
+            2. Place them in the same folder
+            3. Right-click `paper-slimefun-server.7z.001` → Open with WinRAR
+            4. Extract and run `java -jar server.jar nogui`
+
+            ### Included:
+            - Paper 1.20.4
+            - Slimefun4 (Development build)
+            - EULA automatically accepted
+            - Slimefun4 pre-initialized
+          files: |
+            paper-slimefun-server.7z.*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
