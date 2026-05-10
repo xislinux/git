@@ -20,34 +20,33 @@ jobs:
         run: mkdir server
 
       # 1. DOWNLOAD PAPER 1.20.4 (from your Gist)
-      - name: Download Paper 1.20.4
+      - name: Download Paper 1.26.1.2
         working-directory: ./server
         run: |
-          PAPER_URL="https://fill-data.papermc.io/v1/objects/cabed3ae77cf55deba7c7d8722bc9cfd5e991201c211665f9265616d9fe5c77b/paper-1.20.4-499.jar"
+          PAPER_URL="https://fill-data.papermc.io/v1/objects/980421a4f9c4b26f15a9d2fddd7fc91125fd91320d21e189d4504e70893a79e5/paper-26.1.2-61.jar"
           wget "$PAPER_URL" -O server.jar
 
       # 2. DOWNLOAD SLIMEFUN4 (correct blob.build link)
-      - name: Download Slimefun4
-        working-directory: ./server
-        run: |
-          mkdir -p plugins
-          # Development build from blob.build (Recommended for 1.20.4)
-          wget "https://blob.build/project/Slimefun4/Dev" -O plugins/Slimefun4.jar
+      # - name: Download Slimefun4
+      #  working-directory: ./server
+      #  run: |
+      #    mkdir -p plugins
+      #   # Development build from blob.build (Recommended for 1.20.4)
+      #   wget "https://blob.build/project/Slimefun4/Dev" -O plugins/Slimefun4.jar
 
       # 3. FIRST RUN (Accept EULA)
       - name: First run - Accept EULA and generate files
         working-directory: ./server
         run: |
-          echo "eula=true" > eula.txt
           timeout 20s java -jar server.jar nogui || true
 
       # 4. SECOND RUN (Initialize Slimefun4)
-      - name: Second run - Initialize Slimefun4
-        working-directory: ./server
-        run: |
-          # Run for 45 seconds to let Slimefun fully load its database
-          timeout 45s java -jar server.jar nogui || true
-          sleep 5
+      # - name: Second run - Initialize Slimefun4
+      #  working-directory: ./server
+      #  run: |
+      #    # Run for 45 seconds to let Slimefun fully load its database
+       #   timeout 45s java -jar server.jar nogui || true
+        #  sleep 5
 
       # 5. ZIP and SPLIT into 100MB parts
       - name: Compress and split server
